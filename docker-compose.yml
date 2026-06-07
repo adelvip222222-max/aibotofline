@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # --- قاعدة بيانات مودل (Moodle Database) ---
+  moodle-db:
+    image: bitnami/mariadb:10.11
+    container_name: moodle-db
+    volumes:
+      - moodle_db_data:/bitnami/mariadb
+    environment:
+      - MARIADB_USER=bn_moodle
+      - MARIADB_PASSWORD=moodle_password # قم بتغييرها
+      - MARIADB_DATABASE=bitnami_moodle
+      - ALLOW_EMPTY_PASSWORD=yes
+    networks:
+      - ai_instructor_network
+
+  # --- منصة مودل (Moodle LMS) ---
+  moodle:
+    image: bitnami/moodle:latest
+    container_name: moodle-web
+    ports:
+      - '80:8080' # الوصول عبر البراوزر على منفذ 80
+      - '443:8443'
+    volumes:
+      - moodle_data:/bitnami/moodle
+      - moodledata_data:/bitnami/moodledata
+    environment:
+      - MOODLE_DATABASE_HOST=moodle-db
+      - MOODLE_DATABASE_PORT_NUMBER=3306
+      - MOODLE_DATABASE_USER=bn_moodle
+      - MOODLE_DATABASE_PASSWORD=moodle_password # يجب أن تطابق باسوورد DB
+      - MOODLE_DATABASE_NAME=bitnami_moodle
+      - MOODLE_USERNAME=admin
+      - MOODLE_PASSWORD=admin_password # باسوورد لوحة تحكم مودل
+      - MOODLE_EMAIL=admin@example.com
+      - MOODLE_SITE_NAME=Aviation Academy AI
+    depends_on:
+      - moodle-db
+    networks:
+      - ai_instructor_network
+
+  # --- محرك الذكاء الاصطناعي (Ollama Engine) ---
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1 # استخدام كرت شاشة واحد (أو 'all')
+              capabilities: [gpu]
+    networks:
+      - ai_instructor_network
+
+  # --- واجهة محادثة AI (Open WebUI) لتجربة الموديلات فوراً ---
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    ports:
+      - '3000:8080' # الوصول للواجهة عبر منفذ 3000
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+    depends_on:
+      - ollama
+    networks:
+      - ai_instructor_network
+    restart: always
+
+networks:
+  ai_instructor_network:
+    driver: bridge
+
+volumes:
+  moodle_db_data:
+    driver: local
+  moodle_data:
+    driver: local
+  moodledata_data:
+    driver: local
+  ollama_data:
+    driver: local
