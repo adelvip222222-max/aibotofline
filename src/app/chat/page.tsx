@@ -9,12 +9,15 @@ import { Message } from "@/types/chat";
 import {
   BarChart3,
   Clock3,
+  Languages,
   LogOut,
   Menu,
   MessageSquare,
   MessagesSquare,
   Plus,
   RefreshCcw,
+  Shield,
+  TerminalSquare,
   Trash2,
   X,
 } from "lucide-react";
@@ -215,13 +218,43 @@ export default function ChatPage() {
             </div>
           )}
 
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            className="flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm text-red-300 transition hover:bg-red-500/20"
-          >
-            <LogOut size={18} />
-            <span className="hidden sm:inline">تسجيل الخروج</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href="/translator"
+              className="hidden items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-gray-300 transition hover:bg-white/10 md:flex"
+              title="المترجم"
+            >
+              <Languages size={17} />
+              <span>المترجم</span>
+            </a>
+            {user && ["admin", "owner", "developer", "super_admin"].includes(user.role) && (
+              <>
+                <a
+                  href="/admin"
+                  className="hidden items-center gap-2 rounded-xl border border-blue-400/20 bg-blue-500/10 px-3 py-2 text-sm text-blue-200 transition hover:bg-blue-500/20 md:flex"
+                  title="لوحة الإدارة"
+                >
+                  <Shield size={17} />
+                  <span>الإدارة</span>
+                </a>
+                <a
+                  href="/developer"
+                  className="hidden items-center gap-2 rounded-xl border border-violet-400/20 bg-violet-500/10 px-3 py-2 text-sm text-violet-200 transition hover:bg-violet-500/20 md:flex"
+                  title="لوحة المطور"
+                >
+                  <TerminalSquare size={17} />
+                  <span>المطور</span>
+                </a>
+              </>
+            )}
+            <button
+              onClick={() => setShowLogoutConfirm(true)}
+              className="flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm text-red-300 transition hover:bg-red-500/20"
+            >
+              <LogOut size={18} />
+              <span className="hidden sm:inline">تسجيل الخروج</span>
+            </button>
+          </div>
         </div>
       </header>
 

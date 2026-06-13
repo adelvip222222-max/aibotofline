@@ -36,6 +36,17 @@ export const authOptions: AuthOptions = {
           const isValid = await bcrypt.compare(credentials.password as string, user.PasswordHash);
           if (!isValid) throw new Error("كلمة المرور غير صحيحة");
 
+          await pool
+            .request()
+            .input("code", sql.NVarChar, credentials.studentCode as string)
+            .query("UPDATE Users SET LastLogin = GETDATE() WHERE StudentCode = @code");
+
+          const adminCodes = (process.env.ADMIN_STUDENT_CODES || "")
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+          const resolvedRole = adminCodes.includes(user.StudentCode) ? "admin" : user.Role || "student";
+
           console.log(`✅ ${user.FullName} دخل`);
 
           return {
@@ -43,7 +54,7 @@ export const authOptions: AuthOptions = {
             studentCode: user.StudentCode,
             name: user.FullName,
             email: user.Email || "",
-            role: user.Role || "student",
+            role: resolvedRole,
             group: user.UserGroup,
           };
         } catch (err: any) {
@@ -54,7 +65,7 @@ export const authOptions: AuthOptions = {
     }),
   ],
   session: { strategy: "jwt", maxAge: 24 * 60 * 60 },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
   pages: { signIn: "/", error: "/" },
   callbacks: {
     async jwt({ token, user }) {
@@ -85,7 +96,7 @@ export const authOptions: AuthOptions = {
 };
 
 export async function verifyToken(request: NextRequest) {
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET });
   if (!token) throw new Error("غير مصرح");
   return token;
 }

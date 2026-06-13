@@ -7,6 +7,14 @@ interface UseChatOptions {
   onResponseComplete?: () => void | Promise<void>;
 }
 
+function createMessageId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `msg_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export function useChat(options: UseChatOptions = {}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,14 +27,14 @@ export function useChat(options: UseChatOptions = {}) {
       if (isLoading) return;
 
       const userMessage: Message = {
-        id: crypto.randomUUID(),
+        id: createMessageId(),
         role: "user",
         content,
         images,
         timestamp: Date.now(),
       };
 
-      const assistantId = crypto.randomUUID();
+      const assistantId = createMessageId();
       const assistantMessage: Message = {
         id: assistantId,
         role: "assistant",
