@@ -1,23 +1,10 @@
-﻿import type { AuthOptions } from "next-auth";
+import type { AuthOptions } from "next-auth";
+import type { NextRequest } from "next/server";
 import CredentialsProvider from "next-auth/providers/credentials";
-import sql from "mssql";
 import bcrypt from "bcryptjs";
+import sql from "mssql";
 import { getToken } from "next-auth/jwt";
-
-
-
-
-const dbConfig: sql.config = {
-  server: process.env.DB_SERVER || "dev",
-  database: process.env.DB_NAME || "collegechatdb",
-  user: process.env.DB_USER || "sa",
-  password: process.env.DB_PASSWORD || "12345",
-  port: parseInt(process.env.DB_PORT || "1433"),
-  options: {
-    encrypt: false,
-    trustServerCertificate: true,
-  },
-};
+import { connectToDB } from "./db";
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -33,32 +20,21 @@ export const authOptions: AuthOptions = {
             throw new Error("الرجاء إدخال كود الطالب وكلمة المرور");
           }
 
-          const pool = await sql.connect(dbConfig);
+          const pool = await connectToDB();
           const result = await pool
             .request()
             .input("code", sql.NVarChar, credentials.studentCode as string)
             .query("SELECT * FROM Users WHERE StudentCode = @code AND IsActive = 1");
 
-          await pool.close();
-
           const user = result.recordset[0];
-
-          if (!user) {
-            throw new Error("كود الطالب غير موجود");
-          }
+          if (!user) throw new Error("كود الطالب غير موجود");
 
           if (user.LockedUntil && new Date(user.LockedUntil) > new Date()) {
             throw new Error("تم حظر الحساب مؤقتاً");
           }
 
-          const isValid = await bcrypt.compare(
-            credentials.password as string,
-            user.PasswordHash
-          );
-
-          if (!isValid) {
-            throw new Error("كلمة المرور غير صحيحة");
-          }
+          const isValid = await bcrypt.compare(credentials.password as string, user.PasswordHash);
+          if (!isValid) throw new Error("كلمة المرور غير صحيحة");
 
           console.log(`✅ ${user.FullName} دخل`);
 
@@ -76,7 +52,6 @@ export const authOptions: AuthOptions = {
         }
       },
     }),
-    
   ],
   session: { strategy: "jwt", maxAge: 24 * 60 * 60 },
   secret: process.env.NEXTAUTH_SECRET,
@@ -107,20 +82,10 @@ export const authOptions: AuthOptions = {
       return session;
     },
   },
-  
-  trustHost: true,
-  
 };
 
 export async function verifyToken(request: NextRequest) {
-  const token = await getToken({ 
-    request, 
-    secret: process.env.NEXTAUTH_SECRET 
-  });
-  
-  if (!token) {
-    throw new Error("غير مصرح");
-  }
-  
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  if (!token) throw new Error("غير مصرح");
   return token;
 }

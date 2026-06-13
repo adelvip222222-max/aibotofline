@@ -1,106 +1,92 @@
 "use client";
-import { useRef, useEffect } from "react";
+
+import { useEffect, useRef } from "react";
 import ChatMessage from "./ui/ChatMessage";
 import ChatInput from "./ui/ChatInput";
 import ModelSelector from "./ui/ModelSelector";
 import { useChat } from "@/hooks/useChat";
-import { Bot, MessagesSquare, Trash2 } from "lucide-react";
+import { MessageSquare, Sparkles, Trash2 } from "lucide-react";
 
-export default function ChatContainer() {
-  const {
-    messages,
-    isLoading,
-    currentModel,
-    setCurrentModel,
-    sendMessage,
-    stopGeneration,
-    clearChat,
-  } = useChat();
+interface ChatContainerProps {
+  onResponseComplete?: () => void | Promise<void>;
+}
+
+export default function ChatContainer({ onResponseComplete }: ChatContainerProps) {
+  const { messages, isLoading, currentModel, setCurrentModel, sendMessage, stopGeneration, clearChat } = useChat({
+    onResponseComplete,
+  });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages]);
 
   return (
-    <div className="flex flex-col h-full bg-gray-950">
-      {/* Header */}
-      <header className="border-b border-gray-800 px-4 py-3 flex items-center justify-between bg-gray-900/50 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-            <MessagesSquare className="w-4 h-4 text-white" />
+    <div className="flex h-full flex-col bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.12),transparent_38%),#020617]">
+      <header className="sticky top-0 z-10 border-b border-white/10 bg-slate-950/80 px-4 py-3 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 shadow-lg shadow-blue-950/40">
+              <MessageSquare className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold text-white sm:text-lg">المساعد الذكي</h1>
+              <p className="text-xs text-gray-400">Streaming سريع وتحليل صور وملفات كشرح</p>
+            </div>
           </div>
-          <h1 className="text-lg font-semibold text-gray-100">AF Academy</h1>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <ModelSelector
-            currentModel={currentModel}
-            onModelChange={setCurrentModel}
-          />
-          <button
-            onClick={clearChat}
-            className="p-2 rounded-lg hover:bg-gray-800 transition-colors text-gray-400 hover:text-red-400"
-            title="مسح المحادثة"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <ModelSelector currentModel={currentModel} onModelChange={setCurrentModel} />
+            <button
+              onClick={clearChat}
+              className="rounded-xl border border-white/10 bg-white/5 p-2 text-gray-400 transition hover:bg-white/10 hover:text-red-300"
+              title="مسح المحادثة"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-2 py-3">
+      <main className="flex-1 overflow-y-auto px-3 py-4 sm:px-6">
         {messages.length === 0 ? (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center space-y-4">
-              <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-500/20 flex items-center justify-center">
-                <MessagesSquare className="w-10 h-10 text-blue-400" />
+          <div className="mx-auto flex h-full max-w-3xl items-center justify-center">
+            <div className="w-full text-center">
+              <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl border border-blue-400/20 bg-blue-500/10 shadow-2xl shadow-blue-950/30">
+                <Sparkles className="h-10 w-10 text-blue-300" />
               </div>
-            <h2 className="text-2xl font-bold text-gray-200">كيف يمكنني مساعدتك؟</h2>
-<p className="text-gray-500 max-w-md">
-  اسأل أي سؤال، ارفع صورة للتحليل، أو استخدم الإدخال الصوتي
-</p>
-              <div className="flex gap-2 justify-center flex-wrap">
-                {["اشرح لي مفهوم الذكاء الاصطناعي", "اكتب كود HTML بسيط", "ما الفرق بين TCP و UDP"].map(
-                  (suggestion) => (
-                    <button
-                      key={suggestion}
-                      onClick={() => sendMessage(suggestion)}
-                      className="px-3 py-1.5 text-sm rounded-full border border-gray-700 text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors"
-                    >
-                      {suggestion}
-                    </button>
-                  )
-                )}
+              <h2 className="mb-3 text-3xl font-bold text-white">كيف يمكنني مساعدتك؟</h2>
+              <p className="mx-auto mb-6 max-w-xl text-sm leading-7 text-gray-400">
+                اكتب سؤالك، أو ارفع صورة للتحليل. سيتم استخدام Qwen للنصوص وLLaVA للصور تلقائيًا.
+              </p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {[
+                  "اشرح هذا المفهوم ببساطة",
+                  "حلل صورة الشاشة عند رفعها",
+                  "اكتب لي خطة منظمة للمذاكرة",
+                ].map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    onClick={() => sendMessage(suggestion)}
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-gray-300 transition hover:border-blue-400/40 hover:bg-blue-500/10 hover:text-white"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto space-y-2">
+          <div className="mx-auto max-w-4xl divide-y divide-white/[0.04]">
             {messages.map((msg) => (
               <ChatMessage key={msg.id} message={msg} />
             ))}
-            {isLoading && (
-              <div className="flex gap-3 py-4">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-white" />
-                </div>
-                <div className="bg-gray-800/50 rounded-2xl rounded-bl-md px-4 py-3 border border-gray-700/50">
-                  <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
-                    <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
-                    <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
-                  </div>
-                </div>
-              </div>
-            )}
             <div ref={messagesEndRef} />
           </div>
         )}
-      </div>
+      </main>
 
-      {/* Input Area */}
       <ChatInput onSend={sendMessage} onStop={stopGeneration} isLoading={isLoading} />
     </div>
   );
